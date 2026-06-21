@@ -199,7 +199,7 @@
       /* Panel captions + descriptors */
       .caption {
         position: absolute;
-        bottom: clamp(128px, 19vh, 168px);
+        bottom: clamp(162px, 22vh, 208px);
         max-width: 17ch;
         animation: go4-fadeUp 1s var(--ease-ui) both var(--d, 0s);
       }
@@ -237,7 +237,7 @@
       .descriptor {
         position: absolute;
         bottom: clamp(30px, 7vh, 70px);
-        max-width: 19ch;
+        max-width: 22ch;
         font-size: clamp(13px, 1.05vw, 15px);
         font-weight: 300;
         line-height: 1.5;
@@ -250,6 +250,42 @@
       .descriptor--right {
         right: clamp(20px, 2.4vw, 40px);
         text-align: right;
+      }
+
+      /* The signature line each half closes on — a distinct voice per world. */
+      .creed {
+        display: block;
+        margin-top: 14px;
+      }
+      /* Professional — a code comment: monospace, cool, brand-red // marker. */
+      .creed--pro {
+        font-family: 'Space Mono', monospace;
+        /* ~1.5px smaller than .creed--life so the monospace optically matches its
+           size — Space Mono renders larger per px than Space Grotesk. */
+        font-size: clamp(13px, 1vw, 14.5px);
+        font-weight: 400;
+        letter-spacing: 0.02em;
+        line-height: 1.45;
+        color: var(--eyebrow-cool);
+      }
+      .creed--pro::before {
+        content: '> ';
+        color: var(--brand-red-arrow);
+      }
+      /* Personal — a shouted motto: bold italic, warm, oversized quote marks. */
+      .creed--life {
+        font-family: 'Space Grotesk', sans-serif;
+        font-style: italic;
+        font-weight: 700;
+        font-size: clamp(14px, 1.1vw, 16px);
+        letter-spacing: 0.005em;
+        line-height: 1.35;
+        color: var(--eyebrow-warm);
+      }
+      .creed--life::before {
+        content: '— ';
+        font-style: normal;
+        color: var(--brand-red-arrow);
       }
 
       /* ----- Center column ----- */
@@ -416,6 +452,20 @@
         }
       }
 
+      /* ----- Wider screens: let the descriptors breathe where the panels have slack.
+         Below 1000px the safe 22ch holds, so the tagline never crowds the center
+         lockup in the pinned-min tablet band (~700–850px). ----- */
+      @media (min-width: 1000px) {
+        .descriptor {
+          max-width: 26ch;
+        }
+      }
+      @media (min-width: 1400px) {
+        .descriptor {
+          max-width: 30ch;
+        }
+      }
+
       /* ----- Reduced motion: no entrance animation, no slide, no parallax drift ----- */
       @media (prefers-reduced-motion: reduce) {
         *,
@@ -441,7 +491,7 @@
           <p class="eyebrow eyebrow--cool">Professional</p>
           <h2 class="headline">The Machine</h2>
         </div>
-        <p class="descriptor descriptor--left" style="--d: 0.6s">Product owner and builder — turning hard problems into solutions that quietly ship.</p>
+        <p class="descriptor descriptor--left" style="--d: 0.6s">Product creator & builder, AI & open source — turning hard problems into real solutions.<span class="creed creed--pro">Build with purpose. Ship with speed!</span></p>
       </div>
 
       <!-- RIGHT — PERSONAL (at rest); crosses to the left half of the fused face -->
@@ -453,7 +503,7 @@
           <p class="eyebrow eyebrow--warm">Personal</p>
           <h2 class="headline">The Man</h2>
         </div>
-        <p class="descriptor descriptor--right" style="--d: 0.75s">Sports, outdoors, tattoos and tinkerer behind the pixels.</p>
+        <p class="descriptor descriptor--right" style="--d: 0.75s">Sports, outdoors, tattoos and heavy metal — tinkerer behind the pixels.<span class="creed creed--life">Drink beer. Eat meat. Lift heavy!</span></p>
       </div>
 
       <!-- CENTER -->
