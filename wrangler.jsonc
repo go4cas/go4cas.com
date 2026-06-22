@@ -5,8 +5,14 @@
   "observability": {
     "enabled": true
   },
+  // Generate dist/ before deploying. Cloudflare Workers Builds installs deps
+  // (bun install) then runs `wrangler versions upload`; this custom build runs
+  // `bun run build` first so the assets directory below exists.
+  "build": {
+    "command": "bun run build"
+  },
   "assets": {
-    "directory": "."
+    "directory": "./dist"
   },
   "compatibility_flags": [
     "nodejs_compat"
