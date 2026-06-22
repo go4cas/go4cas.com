@@ -1,0 +1,6 @@
+# Files that should not be served publicly by Cloudflare Workers assets
+design/
+README.md
+wrangler.jsonc
+.assetsignore
+.DS_Store
