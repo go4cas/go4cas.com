@@ -1,0 +1,394 @@
+/* go4cas.com — shared styles for generated content pages (hubs, lists, articles).
+   The landing keeps its own inline CSS; this file is content-pages only.
+   Tokens come from tokens.css; per-world accent is set by the body class below. */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg-base);
+  color: var(--text-hi);
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 300;
+  line-height: 1.6;
+  /* Content pages scroll normally — the landing's overflow:hidden is landing-only. */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ----- Per-world accent ----- */
+.world-work {
+  --accent: var(--eyebrow-cool);
+}
+.world-life {
+  --accent: var(--eyebrow-warm);
+}
+
+a {
+  color: var(--accent, var(--text-hi));
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg-base);
+}
+
+/* ----- Page container ----- */
+.page {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 5vw, 48px);
+}
+
+/* ----- Site header ----- */
+.site-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.wordmark {
+  font-family: "Audiowide", sans-serif;
+  font-size: 20px;
+  color: var(--text-hi-2);
+}
+.wordmark:hover {
+  text-decoration: none;
+}
+.wordmark__dot {
+  color: var(--text-low-3);
+}
+.world-tag {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ----- Shared text bits ----- */
+.eyebrow {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+.backlink {
+  display: inline-block;
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-low);
+}
+.backlink:hover {
+  color: var(--accent);
+}
+
+/* ----- Hub ----- */
+.hub,
+.list,
+.article {
+  padding: clamp(40px, 8vh, 80px) 0 64px;
+}
+.hub-head {
+  max-width: 60ch;
+}
+.hub-title,
+.list-title {
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--text-hi);
+}
+.hub-intro {
+  margin-top: 22px;
+  color: var(--text-mid);
+  font-size: clamp(16px, 1.4vw, 18px);
+}
+.section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 30px;
+}
+.section-link {
+  font-family: "Space Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 9px 18px;
+  border: 1px solid var(--hairline);
+  border-radius: 100px;
+  background: var(--surface);
+  color: var(--text-hi-3);
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease,
+    transform 0.3s var(--ease-ui);
+}
+.section-link:hover {
+  border-color: var(--accent);
+  background: var(--surface-hover);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.hub-section {
+  margin-top: clamp(40px, 6vh, 64px);
+}
+.section-eyebrow {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-low-2);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 8px;
+}
+.more-link {
+  display: inline-block;
+  margin-top: 18px;
+  font-family: "Space Mono", monospace;
+  font-size: 13px;
+}
+.cross-link {
+  display: inline-block;
+  margin-top: clamp(48px, 8vh, 80px);
+  font-family: "Space Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text-low);
+}
+.cross-link:hover {
+  color: var(--accent);
+}
+
+/* ----- Card list (hub + section lists) ----- */
+.card-list {
+  list-style: none;
+}
+.card {
+  border-bottom: 1px solid var(--hairline);
+}
+.card__link {
+  display: block;
+  padding: 22px 0;
+  color: inherit;
+}
+.card__link:hover {
+  text-decoration: none;
+}
+.card__link:hover .card__title {
+  color: var(--accent);
+}
+.card__title {
+  font-size: clamp(19px, 2vw, 23px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-hi);
+  transition: color 0.25s ease;
+}
+.card__flag {
+  margin-left: 12px;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  vertical-align: middle;
+}
+.card__summary {
+  margin-top: 6px;
+  color: var(--text-mid);
+  font-size: 15px;
+}
+.card__date {
+  display: block;
+  margin-top: 10px;
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  color: var(--text-low-2);
+}
+
+/* ----- Article ----- */
+.article {
+  max-width: 70ch;
+}
+.article-head {
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 36px;
+}
+.article-head .eyebrow {
+  margin-top: 22px;
+}
+.article__title {
+  font-size: clamp(30px, 4.5vw, 46px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  color: var(--text-hi);
+}
+.article__summary {
+  margin-top: 16px;
+  color: var(--text-mid);
+  font-size: clamp(16px, 1.5vw, 19px);
+}
+.article__date {
+  display: block;
+  margin-top: 16px;
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  color: var(--text-low-2);
+}
+.article .backlink:last-child {
+  margin-top: 48px;
+  padding-top: 28px;
+  border-top: 1px solid var(--hairline);
+  display: block;
+}
+
+/* ----- Prose (rendered Markdown) ----- */
+.prose {
+  color: var(--text-hi-3);
+  font-size: clamp(16px, 1.5vw, 18px);
+  line-height: 1.7;
+}
+.prose > * + * {
+  margin-top: 1.1em;
+}
+.prose h2 {
+  margin-top: 1.8em;
+  font-size: clamp(22px, 2.6vw, 28px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-hi);
+}
+.prose h3 {
+  margin-top: 1.6em;
+  font-size: clamp(18px, 2vw, 21px);
+  font-weight: 600;
+  color: var(--text-hi);
+}
+.prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.4em;
+}
+.prose li + li {
+  margin-top: 0.4em;
+}
+.prose blockquote {
+  padding-left: 18px;
+  border-left: 2px solid var(--accent);
+  color: var(--text-mid);
+  font-style: italic;
+}
+.prose code {
+  font-family: "Space Mono", monospace;
+  font-size: 0.88em;
+  background: var(--surface-hover);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+.prose pre {
+  font-family: "Space Mono", monospace;
+  background: var(--surface-hover);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 18px;
+  overflow-x: auto;
+}
+.prose pre code {
+  background: none;
+  padding: 0;
+}
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--hairline);
+}
+
+/* ----- Footer ----- */
+.site-foot {
+  border-top: 1px solid var(--hairline);
+  padding: 40px 0 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: flex-start;
+}
+.socials {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-low);
+  background: var(--surface);
+  transition:
+    color 0.3s ease,
+    border-color 0.3s ease,
+    transform 0.3s var(--ease-ui);
+}
+.social:hover {
+  color: var(--text-hi);
+  border-color: var(--hairline-hover);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+.foot-note {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-low-3);
+}
+
+/* ----- Focus visibility ----- */
+a:focus-visible {
+  outline: 2px solid var(--text-hi);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ----- Reduced motion ----- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,0 +1,24 @@
+/* go4cas.com design tokens — single source of truth.
+   Linked by the landing (index.html) and every generated content page. */
+:root {
+  --bg-base: #08080a;
+  --brand-red: oklch(0.52 0.17 27);
+  --brand-red-arrow: oklch(0.55 0.17 27);
+  --text-hi: #f2f2f4;
+  --text-hi-2: #e8e8ec;
+  --text-hi-3: #e8e8ea;
+  --text-mid: #b6b6bd;
+  --text-low: #9a9aa2;
+  --text-low-2: #84848d;
+  --text-low-3: #6f6f78;
+  --text-low-4: #6b6b73;
+  --eyebrow-cool: oklch(0.78 0.07 235);
+  --eyebrow-warm: oklch(0.8 0.09 72);
+  --hairline: rgba(255, 255, 255, 0.14);
+  --hairline-16: rgba(255, 255, 255, 0.16);
+  --hairline-hover: rgba(255, 255, 255, 0.4);
+  --surface: rgba(255, 255, 255, 0.02);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --ease-ui: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-cross: cubic-bezier(0.65, 0, 0.35, 1);
+}
