@@ -20,6 +20,7 @@ export interface Frontmatter {
   date?: string; // normalised YYYY-MM-DD
   featured: boolean;
   draft: boolean;
+  repo?: string; // optional source/repo URL (projects)
 }
 
 export interface ContentItem {
@@ -119,6 +120,7 @@ export async function loadContent(): Promise<LoadResult> {
       date: dateStr,
       featured: raw.featured === true,
       draft: raw.draft === true,
+      repo: typeof raw.repo === "string" && raw.repo !== "" ? raw.repo : undefined,
     };
 
     // Drop drafts (already validated, so malformed drafts are still caught above).

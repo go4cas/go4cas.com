@@ -60,20 +60,27 @@ ${FONTS}
 }
 
 export interface LayoutParams extends HeadParams {
-  main: string; // inner HTML for <main>
+  header?: string; // chrome rendered above the scroll region
+  main: string; // inner HTML for <main> (the scroll region)
+  footer?: string; // chrome rendered below the scroll region
+  shell?: boolean; // fix header + footer, scroll only the content area
 }
 
 export function layout(p: LayoutParams): string {
-  const bodyClass = p.world ? `world-${p.world}` : "";
+  const bodyClass = [p.world ? `world-${p.world}` : "", p.shell ? "app-shell" : ""]
+    .filter(Boolean)
+    .join(" ");
   return `<!doctype html>
 <html lang="en">
   <head>
 ${head(p)}
   </head>
   <body class="${bodyClass}">
+${p.header ?? ""}
     <main class="page">
 ${p.main}
     </main>
+${p.footer ?? ""}
   </body>
 </html>
 `;

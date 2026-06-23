@@ -23,17 +23,14 @@ export function list(world: World, section: Section, items: ContentItem[]): stri
 
   const cards = ordered.map(articleCard).join("\n");
 
-  const main = `${siteHeader(world)}
-      <div class="list">
+  const main = `      <div class="list">
         <header class="list-head">
-          <p class="eyebrow">${esc(WORLD_LABELS[world])}</p>
           <h1 class="list-title">${esc(label)}</h1>
         </header>
         <ul class="card-list">
 ${cards}
         </ul>
-      </div>
-${footer()}`;
+      </div>`;
 
   return layout({
     title: `${label} — ${WORLD_LABELS[world]}`,
@@ -41,6 +38,9 @@ ${footer()}`;
     canonicalPath: routePath,
     world,
     ogType: "website",
+    header: siteHeader(world),
+    footer: footer(),
+    shell: true,
     main,
   });
 }

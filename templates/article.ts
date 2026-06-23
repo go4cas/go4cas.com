@@ -15,8 +15,7 @@ export function article(item: ContentItem): string {
     ? `<time class="article__date" datetime="${esc(frontmatter.date)}">${esc(formatDate(frontmatter.date))}</time>`
     : "";
 
-  const main = `${siteHeader(world)}
-      <article class="article">
+  const main = `      <article class="article">
         <header class="article-head">
 ${backLink(world, section)}
           <p class="eyebrow">${esc(SECTION_LABELS[section])}</p>
@@ -28,8 +27,7 @@ ${backLink(world, section)}
 ${html}
         </div>
 ${backLink(world, section)}
-      </article>
-${footer()}`;
+      </article>`;
 
   return layout({
     title: frontmatter.title,
@@ -37,6 +35,8 @@ ${footer()}`;
     canonicalPath: routePath,
     world,
     ogType: "article",
+    header: siteHeader(world),
+    footer: footer(),
     main,
   });
 }

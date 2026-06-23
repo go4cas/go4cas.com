@@ -2,6 +2,7 @@
 title: "go4cas.com"
 summary: "A two-world personal site built on a zero-dependency static pipeline with Bun and TypeScript."
 featured: true
+repo: "https://github.com/go4cas/go4cas.com"
 ---
 
 ## What it is

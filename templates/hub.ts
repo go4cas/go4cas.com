@@ -51,10 +51,8 @@ ${writing.map(articleCard).join("\n")}
     )
     .join("\n");
 
-  const main = `${siteHeader(world)}
-      <article class="hub">
+  const main = `      <article class="hub">
         <header class="hub-head">
-          <p class="eyebrow">${esc(WORLD_LABELS[world])}</p>
           <h1 class="hub-title">${esc(frontmatter.title)}</h1>
           <div class="prose hub-intro">
 ${html}
@@ -66,8 +64,7 @@ ${sectionLinks}
 ${featuredBlock}
 ${writingBlock}
         <a class="cross-link" href="/${other}">↔ the other world — ${esc(WORLD_LABELS[other])}</a>
-      </article>
-${footer()}`;
+      </article>`;
 
   return layout({
     title: frontmatter.title,
@@ -75,6 +72,9 @@ ${footer()}`;
     canonicalPath: routePath,
     world,
     ogType: "website",
+    header: siteHeader(world),
+    footer: footer(),
+    shell: true,
     main,
   });
 }

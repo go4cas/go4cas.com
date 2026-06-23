@@ -9,7 +9,7 @@ export interface RawFrontmatter {
 }
 
 const HUB_KEYS = new Set(["title", "summary", "draft"]);
-const ARTICLE_KEYS = new Set(["title", "summary", "date", "featured", "draft"]);
+const ARTICLE_KEYS = new Set(["title", "summary", "date", "featured", "draft", "repo"]);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export interface ValidationContext {
@@ -45,6 +45,14 @@ export function validateFrontmatter(fm: RawFrontmatter, ctx: ValidationContext):
     // featured: optional, boolean when present.
     if ("featured" in fm && typeof fm.featured !== "boolean") {
       errors.push("featured must be true or false");
+    }
+
+    // repo: optional, must be an http(s) URL string when present.
+    if ("repo" in fm && fm.repo != null && fm.repo !== "") {
+      const v = fm.repo;
+      if (typeof v !== "string" || !/^https?:\/\//.test(v)) {
+        errors.push("repo must be an http(s) URL");
+      }
     }
 
     const hasDate = "date" in fm && fm.date != null && fm.date !== "";
