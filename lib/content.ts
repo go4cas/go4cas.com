@@ -1,87 +1,56 @@
-// Content pipeline: walk content/, parse frontmatter + Markdown, derive
-// {world, section, slug} from the file path, validate, render, drop drafts.
+// Content pipeline: walk content/, derive {world, section, slug} from the file
+// path, validate frontmatter, render Markdown, drop drafts. Problems are
+// collected (not thrown one-at-a-time) so an author can fix everything in one pass.
 
 import { Glob } from "bun";
 import matter from "gray-matter";
 import { marked } from "marked";
-import { basename } from "node:path";
-import { validateFrontmatter, toIsoDate, type RawFrontmatter } from "./validate.ts";
-import {
-  WORLD_SECTIONS,
-  type World,
-  type Section,
-} from "./paths.ts";
-
-export type PageKind = "hub" | "list" | "article";
-
-export interface Frontmatter {
-  title: string;
-  summary: string;
-  date?: string; // normalised YYYY-MM-DD
-  featured: boolean;
-  draft: boolean;
-  repo?: string; // optional source/repo URL (projects)
-}
+import { WORLDS, WORLD_SECTIONS, type World, type Section } from "./site.ts";
 
 export interface ContentItem {
   world: World;
   section?: Section; // undefined for a world hub
-  slug?: string; // undefined for hubs and (synthesized) list pages
-  kind: PageKind;
-  frontmatter: Frontmatter;
+  title: string;
+  summary: string;
+  date?: string; // YYYY-MM-DD
+  featured: boolean;
+  repo?: string; // optional source/repo URL (projects)
   html: string; // rendered Markdown body
-  sourcePath: string; // e.g. content/work/writing/foo.md
-  routePath: string; // e.g. /work/writing/foo
-  outputPath: string; // e.g. dist/work/writing/foo/index.html
-  date?: Date; // parsed from frontmatter.date when present
-}
-
-export interface LoadResult {
-  items: ContentItem[]; // hubs + articles (no drafts); lists are synthesized later
-  draftsSkipped: number;
-  errors: string[]; // prefixed `✗ <sourcePath>: <message>`
+  route: string; // e.g. /work/writing/foo
 }
 
 const CONTENT_DIR = "content";
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const HUB_KEYS = ["title", "summary", "draft"];
+const ARTICLE_KEYS = [...HUB_KEYS, "date", "featured", "repo"];
 
 marked.setOptions({ gfm: true });
 
-export async function loadContent(): Promise<LoadResult> {
-  const errors: string[] = [];
+/** Hubs + non-draft articles, newest first (undated items last, by title). */
+export async function loadContent() {
   const items: ContentItem[] = [];
+  const errors: string[] = [];
   let draftsSkipped = 0;
 
-  const glob = new Glob("**/*.md");
-  const relPaths: string[] = [];
-  for await (const rel of glob.scan({ cwd: CONTENT_DIR })) {
-    relPaths.push(rel.split("\\").join("/")); // normalise Windows separators
-  }
-  relPaths.sort(); // deterministic build order
+  const paths = await Array.fromAsync(new Glob("**/*.md").scan({ cwd: CONTENT_DIR }));
+  for (const rel of paths.map((p) => p.replaceAll("\\", "/")).sort()) {
+    const fail = (msg: string) => errors.push(`✗ ${CONTENT_DIR}/${rel}: ${msg}`);
 
-  for (const rel of relPaths) {
-    const sourcePath = `${CONTENT_DIR}/${rel}`;
-    const fail = (msg: string) => errors.push(`✗ ${sourcePath}: ${msg}`);
-
-    // Derive world/section/slug + kind from the path shape.
-    const parts = rel.split("/");
-    const world = parts[0] as World;
-    if (world !== "work" && world !== "life") {
-      fail(`unknown world "${parts[0]}" (expected work or life)`);
+    // <world>/index.md is a hub; <world>/<section>/<slug>.md is an article.
+    const [world, section, file] = rel.split("/") as [World, Section | "index.md", string?];
+    const isHub = section === "index.md" && !file;
+    const slug = file?.replace(/\.md$/, "");
+    if (!WORLDS.includes(world)) {
+      fail(`unknown world "${world}" (expected ${WORLDS.join(" or ")})`);
       continue;
     }
-
-    let kind: PageKind;
-    let section: Section | undefined;
-    let slug: string | undefined;
-
-    if (parts.length === 2 && parts[1] === "index.md") {
-      kind = "hub";
-    } else if (parts.length === 3) {
-      kind = "article";
-      section = parts[1] as Section;
-      slug = basename(parts[2], ".md");
-      if (!WORLD_SECTIONS[world].includes(section)) {
+    if (!isHub) {
+      if (!slug || rel.split("/").length !== 3) {
+        fail("unexpected path shape (expected <world>/index.md or <world>/<section>/<slug>.md)");
+        continue;
+      }
+      if (!WORLD_SECTIONS[world].includes(section as Section)) {
         fail(`section "${section}" is not valid for world "${world}"`);
         continue;
       }
@@ -89,90 +58,71 @@ export async function loadContent(): Promise<LoadResult> {
         fail(`invalid slug "${slug}" (kebab-case, not "index")`);
         continue;
       }
-    } else {
-      fail("unexpected path shape (expected <world>/index.md or <world>/<section>/<slug>.md)");
-      continue;
     }
 
-    // Parse frontmatter + body.
     let parsed: matter.GrayMatterFile<string>;
     try {
-      parsed = matter(await Bun.file(sourcePath).text());
+      parsed = matter(await Bun.file(`${CONTENT_DIR}/${rel}`).text());
     } catch (e) {
       fail(`failed to parse frontmatter: ${(e as Error).message}`);
       continue;
     }
-    const raw = parsed.data as RawFrontmatter;
+    const fm = parsed.data;
+    // gray-matter parses an unquoted YYYY-MM-DD into a Date; normalise it back.
+    const date = fm.date instanceof Date ? fm.date.toISOString().slice(0, 10) : fm.date || undefined;
 
-    // Validate.
-    const isWriting = section === "writing";
-    const vErrors = validateFrontmatter(raw, { kind, isWriting, sourcePath });
-    if (vErrors.length) {
-      vErrors.forEach(fail);
+    const problems = validate(fm, date, isHub, section === "writing");
+    if (problems.length) {
+      problems.forEach(fail);
       continue;
     }
-
-    // Normalise frontmatter (date may have been YAML-parsed into a Date).
-    const dateStr = normaliseDate(raw.date);
-    const frontmatter: Frontmatter = {
-      title: String(raw.title),
-      summary: String(raw.summary),
-      date: dateStr,
-      featured: raw.featured === true,
-      draft: raw.draft === true,
-      repo: typeof raw.repo === "string" && raw.repo !== "" ? raw.repo : undefined,
-    };
-
-    // Drop drafts (already validated, so malformed drafts are still caught above).
-    if (frontmatter.draft) {
+    // Drafts are dropped only after validation, so malformed drafts still fail.
+    if (fm.draft) {
       draftsSkipped++;
       continue;
     }
 
-    const { routePath, outputPath } = routeFor(world, section, slug);
     items.push({
       world,
-      section,
-      slug,
-      kind,
-      frontmatter,
-      html: kind === "article" || kind === "hub" ? (marked.parse(parsed.content) as string) : "",
-      sourcePath,
-      routePath,
-      outputPath,
-      date: dateStr ? new Date(dateStr) : undefined,
+      section: isHub ? undefined : (section as Section),
+      title: fm.title,
+      summary: fm.summary,
+      date,
+      featured: fm.featured === true,
+      repo: fm.repo || undefined,
+      html: marked.parse(parsed.content) as string,
+      route: isHub ? `/${world}` : `/${world}/${section}/${slug}`,
     });
   }
 
+  items.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.title.localeCompare(b.title));
   return { items, draftsSkipped, errors };
 }
 
-function normaliseDate(raw: unknown): string | undefined {
-  if (raw == null || raw === "") return undefined;
-  if (raw instanceof Date) return toIsoDate(raw);
-  return String(raw);
-}
+function validate(fm: Record<string, unknown>, date: unknown, isHub: boolean, isWriting: boolean): string[] {
+  const errors: string[] = [];
+  const allowed = isHub ? HUB_KEYS : ARTICLE_KEYS;
+  const isBool = (key: string) => !(key in fm) || typeof fm[key] === "boolean";
 
-function routeFor(
-  world: World,
-  section: Section | undefined,
-  slug: string | undefined,
-): { routePath: string; outputPath: string } {
-  if (!section) {
-    // hub
-    return { routePath: `/${world}`, outputPath: `dist/${world}/index.html` };
+  for (const key of Object.keys(fm)) {
+    if (!allowed.includes(key)) errors.push(`unknown frontmatter key: ${key}`);
   }
-  // article
-  return {
-    routePath: `/${world}/${section}/${slug}`,
-    outputPath: `dist/${world}/${section}/${slug}/index.html`,
-  };
-}
+  for (const key of ["title", "summary"]) {
+    const v = fm[key];
+    if (typeof v !== "string" || v.trim() === "") errors.push(`missing required field: ${key}`);
+  }
+  // A bare `draft:` parses to null, so presence alone isn't enough.
+  if (!isBool("draft")) errors.push("draft must be true or false");
+  if (isHub) return errors;
 
-/** Route + output path for a synthesized section list page. */
-export function listRoute(world: World, section: Section): { routePath: string; outputPath: string } {
-  return {
-    routePath: `/${world}/${section}`,
-    outputPath: `dist/${world}/${section}/index.html`,
-  };
+  if (!isBool("featured")) errors.push("featured must be true or false");
+  if (fm.repo && (typeof fm.repo !== "string" || !/^https?:\/\//.test(fm.repo))) {
+    errors.push("repo must be an http(s) URL");
+  }
+  if (date == null) {
+    if (isWriting) errors.push("writing entry requires a date");
+  } else if (typeof date !== "string" || !DATE_RE.test(date) || Number.isNaN(Date.parse(date))) {
+    errors.push(`invalid date (expected YYYY-MM-DD): ${String(fm.date)}`);
+  }
+  return errors;
 }

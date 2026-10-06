@@ -557,27 +557,12 @@
 
             var world = panel.getAttribute('data-world')
             status.textContent = 'Entering the ' + world + ' world…'
-
-            var navigated = false
-            function go() {
-              if (navigated) return
-              navigated = true
+            // Navigate once the ~650ms fuse slide (.stage.fusing) has played.
+            setTimeout(function () {
               window.location.href = href
-            }
+            }, 650)
 
-            // Drive navigation off the panel slide finishing; fall back on a timer.
-            stage.addEventListener(
-              'transitionend',
-              function (ev) {
-                if (ev.target === panel && ev.propertyName === 'transform') go()
-              },
-              { once: true }
-            )
-            // ~650ms fuse + small buffer in case transitionend never fires.
-            setTimeout(go, 720)
-
-            stage.classList.add('fusing')
-            stage.classList.add('assembled')
+            stage.classList.add('fusing', 'assembled')
           })
         })
 

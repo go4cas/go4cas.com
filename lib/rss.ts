@@ -1,29 +1,19 @@
-// RSS 2.0 feed generation for a world's writing, reverse-chronological.
+// RSS 2.0 feed for a world's writing (items arrive newest first).
 
-import { esc } from "./html.ts";
-import { SITE, RSS_CHANNEL, absoluteUrl, type World } from "./paths.ts";
+import { esc, label, SITE_NAME, SITE_URL, FEED_DESCRIPTIONS, type World } from "./site.ts";
 import type { ContentItem } from "./content.ts";
 
-/** Build a valid RSS 2.0 feed string for a world's writing items. */
 export function buildFeed(world: World, writing: ContentItem[], buildDate: Date): string {
-  const channel = RSS_CHANNEL[world];
-  const selfLink = absoluteUrl(`/${world}/writing/rss.xml`);
-  const channelLink = absoluteUrl(`/${world}/writing`);
-
-  const ordered = [...writing].sort(
-    (a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0),
-  );
-
-  const items = ordered
+  const items = writing
     .map((item) => {
-      const link = absoluteUrl(item.routePath);
-      const pubDate = item.date ? item.date.toUTCString() : buildDate.toUTCString();
+      const link = esc(SITE_URL + item.route);
+      const pubDate = (item.date ? new Date(item.date) : buildDate).toUTCString();
       return `    <item>
-      <title>${esc(item.frontmatter.title)}</title>
-      <link>${esc(link)}</link>
-      <guid isPermaLink="true">${esc(link)}</guid>
-      <description>${esc(item.frontmatter.summary)}</description>
-      <pubDate>${esc(pubDate)}</pubDate>
+      <title>${esc(item.title)}</title>
+      <link>${link}</link>
+      <guid isPermaLink="true">${link}</guid>
+      <description>${esc(item.summary)}</description>
+      <pubDate>${pubDate}</pubDate>
     </item>`;
     })
     .join("\n");
@@ -31,13 +21,13 @@ export function buildFeed(world: World, writing: ContentItem[], buildDate: Date)
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>${esc(channel.title)}</title>
-    <link>${esc(channelLink)}</link>
-    <description>${esc(channel.description)}</description>
+    <title>${SITE_NAME} · ${label(world)} — Writing</title>
+    <link>${SITE_URL}/${world}/writing</link>
+    <description>${esc(FEED_DESCRIPTIONS[world])}</description>
     <language>en</language>
-    <atom:link href="${esc(selfLink)}" rel="self" type="application/rss+xml" />
-    <lastBuildDate>${esc(buildDate.toUTCString())}</lastBuildDate>
-    <generator>${esc(SITE.name)} static build</generator>
+    <atom:link href="${SITE_URL}/${world}/writing/rss.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>${buildDate.toUTCString()}</lastBuildDate>
+    <generator>${SITE_NAME} static build</generator>
 ${items}
   </channel>
 </rss>
