@@ -18,5 +18,3 @@ with exactly one honest outcome.
 Strength is a long game. You add a little, you recover, you add a little more.
 It rewards the same patience that good work does, just with fewer ways to lie to
 yourself about whether you actually did it.
-
-Drink beer. Eat meat. Lift heavy.

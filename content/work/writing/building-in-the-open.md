@@ -2,6 +2,7 @@
 title: "Building in the open"
 summary: "Why shipping early, in public, beats polishing in private."
 date: 2026-06-22
+tags: ["shipping", "product"]
 featured: true
 ---
 
@@ -23,5 +24,3 @@ actually needs. Shipping early forces the questions that matter:
 Speed without purpose is just thrashing. The point isn't to ship fast for its
 own sake — it's to learn fast, and to keep what you learn pointed at something
 worth building.
-
-Build with purpose. Ship with speed.

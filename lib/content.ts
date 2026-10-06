@@ -1,128 +1,242 @@
-// Content pipeline: walk content/, derive {world, section, slug} from the file
-// path, validate frontmatter, render Markdown, drop drafts. Problems are
+// Content pipeline: walk content/, classify each file by its path, validate
+// frontmatter against lib/schema.ts, render Markdown, drop drafts. Problems are
 // collected (not thrown one-at-a-time) so an author can fix everything in one pass.
+//
+//   <world>/index.md                    world hub
+//   <world>/<section>/index.md          optional section intro
+//   <world>/<section>/<slug>.md         entry
+//   <world>/<section>/<slug>/index.md   entry with its own files (images etc.)
+//   <world>/<section>/<slug>/<file>     a file served next to that entry
 
 import { Glob } from "bun";
 import matter from "gray-matter";
-import { marked } from "marked";
-import { WORLDS, WORLD_SECTIONS, type World, type Section } from "./site.ts";
+import { Marked, type Tokens } from "marked";
+import {
+  COLLECTIONS,
+  HUB_FIELDS,
+  SECTION_FIELDS,
+  SLUG_RE,
+  WORLDS,
+  WORLD_KEYS,
+  validate,
+  type Field,
+  type LinkKind,
+  type Section,
+  type World,
+} from "./schema.ts";
 
-export interface ContentItem {
+export const CONTENT_DIR = "content";
+
+export interface Hub {
   world: World;
-  section?: Section; // undefined for a world hub
   title: string;
   summary: string;
-  date?: string; // YYYY-MM-DD
-  featured: boolean;
-  repo?: string; // optional source/repo URL (projects)
-  html: string; // rendered Markdown body
-  route: string; // e.g. /work/writing/foo
+  creed: string;
+  feed: string;
+  html: string;
+  route: string;
 }
 
-const CONTENT_DIR = "content";
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const HUB_KEYS = ["title", "summary", "draft"];
-const ARTICLE_KEYS = [...HUB_KEYS, "date", "featured", "repo"];
+export interface SectionIntro {
+  title: string;
+  summary: string;
+  html: string;
+}
 
-marked.setOptions({ gfm: true });
+export interface Entry {
+  world: World;
+  section: Section;
+  slug: string;
+  route: string; // e.g. /work/writing/foo
+  title: string;
+  summary: string;
+  html: string;
+  featured: boolean;
+  image?: string; // absolute path of the entry's own social image
+  files: string[]; // source paths copied next to the page
+  // writing
+  date?: string; // YYYY-MM-DD
+  updated?: string;
+  tags: string[];
+  // projects
+  status?: string;
+  year?: number;
+  stack: string[];
+  links: Partial<Record<LinkKind, string>>;
+  // projects + pursuits
+  since?: number;
+  order?: number;
+}
 
-/** Hubs + non-draft articles, newest first (undated items last, by title). */
-export async function loadContent() {
-  const items: ContentItem[] = [];
-  const errors: string[] = [];
-  let draftsSkipped = 0;
+export interface Content {
+  hubs: Partial<Record<World, Hub>>;
+  intros: Map<string, SectionIntro>; // keyed "<world>/<section>"
+  entries: Entry[]; // sorted: by world, section, then the collection's own order
+  draftsSkipped: number;
+  errors: string[];
+}
 
-  const paths = await Array.fromAsync(new Glob("**/*.md").scan({ cwd: CONTENT_DIR }));
-  for (const rel of paths.map((p) => p.replaceAll("\\", "/")).sort()) {
-    const fail = (msg: string) => errors.push(`✗ ${CONTENT_DIR}/${rel}: ${msg}`);
+export async function loadContent(): Promise<Content> {
+  const content: Content = { hubs: {}, intros: new Map(), entries: [], draftsSkipped: 0, errors: [] };
+  const paths = (await Array.fromAsync(new Glob("**/*").scan({ cwd: CONTENT_DIR })))
+    .map((p) => p.replaceAll("\\", "/"))
+    .sort();
 
-    // <world>/index.md is a hub; <world>/<section>/<slug>.md is an article.
-    const [world, section, file] = rel.split("/") as [World, Section | "index.md", string?];
-    const isHub = section === "index.md" && !file;
-    const slug = file?.replace(/\.md$/, "");
-    if (!WORLDS.includes(world)) {
-      fail(`unknown world "${world}" (expected ${WORLDS.join(" or ")})`);
+  // Files inside entry folders, keyed by the folder ("<world>/<section>/<slug>").
+  const folderFiles = new Map<string, string[]>();
+  for (const rel of paths) {
+    const parts = rel.split("/");
+    if (parts.length === 4 && parts[3] !== "index.md" && !rel.endsWith(".md")) {
+      const folder = parts.slice(0, 3).join("/");
+      folderFiles.set(folder, [...(folderFiles.get(folder) ?? []), parts[3]]);
+    }
+  }
+  const usedFolders = new Set<string>();
+
+  for (const rel of paths) {
+    const fail = (msg: string) => content.errors.push(`✗ ${CONTENT_DIR}/${rel}: ${msg}`);
+    const parts = rel.split("/");
+    const [world, section, name, file] = parts as [World, Section, string?, string?];
+
+    if (!(world in WORLDS)) {
+      fail(`unknown world "${world}" (expected ${WORLD_KEYS.join(" or ")})`);
       continue;
     }
-    if (!isHub) {
-      if (!slug || rel.split("/").length !== 3) {
-        fail("unexpected path shape (expected <world>/index.md or <world>/<section>/<slug>.md)");
-        continue;
+    if (parts.length === 2) {
+      if (section !== ("index.md" as string)) fail("unexpected file (a world folder holds index.md and section folders)");
+      else {
+        const doc = await read(rel, HUB_FIELDS, fail);
+        if (doc) content.hubs[world] = { world, ...(doc.fm as Omit<Hub, "world">), html: doc.html, route: `/${world}` };
       }
-      if (!WORLD_SECTIONS[world].includes(section as Section)) {
-        fail(`section "${section}" is not valid for world "${world}"`);
-        continue;
-      }
-      if (slug === "index" || !SLUG_RE.test(slug)) {
-        fail(`invalid slug "${slug}" (kebab-case, not "index")`);
-        continue;
-      }
-    }
-
-    let parsed: matter.GrayMatterFile<string>;
-    try {
-      parsed = matter(await Bun.file(`${CONTENT_DIR}/${rel}`).text());
-    } catch (e) {
-      fail(`failed to parse frontmatter: ${(e as Error).message}`);
       continue;
     }
-    const fm = parsed.data;
-    // gray-matter parses an unquoted YYYY-MM-DD into a Date; normalise it back.
-    const date = fm.date instanceof Date ? fm.date.toISOString().slice(0, 10) : fm.date || undefined;
+    if (!(WORLDS[world].sections as Section[]).includes(section)) {
+      fail(`section "${section}" is not valid for world "${world}" (expected ${WORLDS[world].sections.join(" or ")})`);
+      continue;
+    }
+    if (parts.length === 3 && name === "index.md") {
+      const doc = await read(rel, SECTION_FIELDS, fail);
+      if (doc) content.intros.set(`${world}/${section}`, { ...(doc.fm as Omit<SectionIntro, "html">), html: doc.html });
+      continue;
+    }
 
-    const problems = validate(fm, date, isHub, section === "writing");
-    if (problems.length) {
-      problems.forEach(fail);
+    const isFolder = parts.length === 4;
+    if (isFolder && file !== "index.md") {
+      if (file!.endsWith(".md")) fail('an entry folder holds one Markdown file, named "index.md"');
+      continue; // other files are attached to their entry below
+    }
+    if (parts.length > 4 || (!isFolder && !name!.endsWith(".md"))) {
+      fail(`unexpected path (see the layout at the top of lib/content.ts)`);
+      continue;
+    }
+    const slug = isFolder ? name! : name!.replace(/\.md$/, "");
+    if (!SLUG_RE.test(slug)) {
+      fail(`invalid slug "${slug}" (use kebab-case)`);
+      continue;
+    }
+
+    const folder = `${world}/${section}/${slug}`;
+    if (isFolder) usedFolders.add(folder);
+    const route = `/${folder}`;
+    const files = isFolder ? (folderFiles.get(folder) ?? []) : [];
+    const doc = await read(rel, COLLECTIONS[section].fields, fail, { route, files });
+    if (!doc) continue;
+    const fm = doc.fm;
+    if (fm.image && !files.includes(fm.image as string)) {
+      fail(`image "${fm.image}" not found${isFolder ? " in the entry's folder" : " (move the entry into a folder to add files)"}`);
       continue;
     }
     // Drafts are dropped only after validation, so malformed drafts still fail.
     if (fm.draft) {
-      draftsSkipped++;
+      content.draftsSkipped++;
       continue;
     }
 
-    items.push({
+    content.entries.push({
       world,
-      section: isHub ? undefined : (section as Section),
-      title: fm.title,
-      summary: fm.summary,
-      date,
+      section,
+      slug,
+      route,
+      title: fm.title as string,
+      summary: fm.summary as string,
+      html: doc.html,
       featured: fm.featured === true,
-      repo: fm.repo || undefined,
-      html: marked.parse(parsed.content) as string,
-      route: isHub ? `/${world}` : `/${world}/${section}/${slug}`,
+      image: fm.image ? `${route}/${fm.image}` : undefined,
+      files: files.map((f) => `${CONTENT_DIR}/${folder}/${f}`),
+      date: fm.date as string | undefined,
+      updated: fm.updated as string | undefined,
+      tags: (fm.tags as string[]) ?? [],
+      status: fm.status as string | undefined,
+      year: fm.year as number | undefined,
+      stack: (fm.stack as string[]) ?? [],
+      links: (fm.links as Entry["links"]) ?? {},
+      since: fm.since as number | undefined,
+      order: fm.order as number | undefined,
     });
   }
 
-  items.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.title.localeCompare(b.title));
-  return { items, draftsSkipped, errors };
+  for (const folder of folderFiles.keys()) {
+    if (!usedFolders.has(folder)) content.errors.push(`✗ ${CONTENT_DIR}/${folder}/: files without an index.md`);
+  }
+
+  content.entries.sort(compareEntries);
+  return content;
 }
 
-function validate(fm: Record<string, unknown>, date: unknown, isHub: boolean, isWriting: boolean): string[] {
-  const errors: string[] = [];
-  const allowed = isHub ? HUB_KEYS : ARTICLE_KEYS;
-  const isBool = (key: string) => !(key in fm) || typeof fm[key] === "boolean";
+/** By world and section (schema order), then newest first or by `order`, then title. */
+function compareEntries(a: Entry, b: Entry): number {
+  const worldOrder = WORLD_KEYS.indexOf(a.world) - WORLD_KEYS.indexOf(b.world);
+  const sections = WORLDS[a.world].sections as Section[];
+  const sectionOrder = sections.indexOf(a.section) - sections.indexOf(b.section);
+  if (worldOrder || sectionOrder) return worldOrder || sectionOrder;
+  const own =
+    COLLECTIONS[a.section].sort === "date"
+      ? (b.date ?? "").localeCompare(a.date ?? "")
+      : (a.order ?? Infinity) - (b.order ?? Infinity) || 0;
+  return own || a.title.localeCompare(b.title);
+}
 
-  for (const key of Object.keys(fm)) {
-    if (!allowed.includes(key)) errors.push(`unknown frontmatter key: ${key}`);
+/** Parse, normalise and validate one Markdown file; undefined if it has problems. */
+async function read(
+  rel: string,
+  fields: Record<string, Field>,
+  fail: (msg: string) => void,
+  entry?: { route: string; files: string[] },
+) {
+  let parsed: matter.GrayMatterFile<string>;
+  try {
+    parsed = matter(await Bun.file(`${CONTENT_DIR}/${rel}`).text());
+  } catch (e) {
+    fail(`failed to parse frontmatter: ${(e as Error).message}`);
+    return;
   }
-  for (const key of ["title", "summary"]) {
-    const v = fm[key];
-    if (typeof v !== "string" || v.trim() === "") errors.push(`missing required field: ${key}`);
+  // gray-matter parses an unquoted YYYY-MM-DD into a Date; normalise it back.
+  const fm = Object.fromEntries(
+    Object.entries(parsed.data).map(([k, v]) => [k, v instanceof Date ? v.toISOString().slice(0, 10) : v]),
+  );
+  const problems = validate(fm, fields);
+  const html = render(parsed.content, entry, problems);
+  if (problems.length) {
+    problems.forEach(fail);
+    return;
   }
-  // A bare `draft:` parses to null, so presence alone isn't enough.
-  if (!isBool("draft")) errors.push("draft must be true or false");
-  if (isHub) return errors;
+  return { fm, html };
+}
 
-  if (!isBool("featured")) errors.push("featured must be true or false");
-  if (fm.repo && (typeof fm.repo !== "string" || !/^https?:\/\//.test(fm.repo))) {
-    errors.push("repo must be an http(s) URL");
-  }
-  if (date == null) {
-    if (isWriting) errors.push("writing entry requires a date");
-  } else if (typeof date !== "string" || !DATE_RE.test(date) || Number.isNaN(Date.parse(date))) {
-    errors.push(`invalid date (expected YYYY-MM-DD): ${String(fm.date)}`);
-  }
-  return errors;
+/** Markdown → HTML. Relative links and images that name one of the entry's own
+   files are rewritten to absolute paths (pages are served without a trailing
+   slash, so a bare "photo.jpg" would otherwise resolve one level up). */
+function render(markdown: string, entry: { route: string; files: string[] } | undefined, problems: string[]): string {
+  const marked = new Marked({
+    gfm: true,
+    walkTokens(token) {
+      if (token.type !== "link" && token.type !== "image") return;
+      const t = token as Tokens.Link | Tokens.Image;
+      if (/^([a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(t.href)) return; // absolute, root-relative or fragment
+      const file = decodeURIComponent(t.href.split(/[?#]/)[0]);
+      if (entry?.files.includes(file)) t.href = `${entry.route}/${t.href}`;
+      else if (t.type === "image") problems.push(`image "${t.href}" not found${entry ? " in the entry's folder" : ""}`);
+    },
+  });
+  return marked.parse(markdown) as string;
 }

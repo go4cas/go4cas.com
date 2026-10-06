@@ -2,6 +2,7 @@
 title: "Off the clock"
 summary: "On the worlds you build that have nothing to do with work."
 date: 2026-06-20
+tags: ["balance"]
 ---
 
 The best thing I ever did for my work was to take the parts of my life that have
@@ -19,5 +20,3 @@ person doing the work intact.
 Some days the ideas that unstick a hard problem don't arrive at the desk. They
 arrive on a trail, or under a bar, or somewhere with no screen in sight. You
 can't schedule that. You can only make room for it.
-
-Drink beer. Eat meat. Lift heavy.

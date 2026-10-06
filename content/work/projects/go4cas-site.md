@@ -1,8 +1,12 @@
 ---
 title: "go4cas.com"
 summary: "A two-world personal site built on a zero-dependency static pipeline with Bun and TypeScript."
+status: "active"
+year: 2026
+stack: ["Bun", "TypeScript", "Cloudflare Workers"]
+links:
+  repo: "https://github.com/go4cas/go4cas.com"
 featured: true
-repo: "https://github.com/go4cas/go4cas.com"
 ---
 
 ## What it is
@@ -22,5 +26,3 @@ framework, no client-side router.
 - **Zero runtime dependencies:** the shipped output is plain HTML, CSS, and a
   sprinkle of vanilla JS.
 - **Clean, shareable URLs:** `/work`, `/life`, and everything below them.
-
-Build with purpose. Ship with speed.

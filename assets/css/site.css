@@ -138,7 +138,8 @@ a:hover {
   line-height: 1.05;
   color: var(--text-hi);
 }
-.hub-intro {
+.hub-intro,
+.list-intro {
   margin-top: 22px;
   color: var(--text-mid);
   font-size: clamp(16px, 1.4vw, 18px);
@@ -297,20 +298,29 @@ a:hover {
   font-size: 15px;
 }
 
-/* Footer: date + optional repo link, right-aligned. */
+/* Footer: facts (date, status, year) left, outbound links right. */
 .card__foot {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 14px;
   margin-top: 16px;
 }
-.card__date {
+.card__meta,
+.article__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   font-family: "Space Mono", monospace;
   font-size: 12px;
   color: var(--text-low-2);
 }
-.card__repo {
+.card__meta {
+  margin-right: auto;
+}
+.status--active {
+  color: var(--accent);
+}
+.card__out {
   position: relative; /* lift above the stretched-link overlay */
   z-index: 1;
   display: inline-flex;
@@ -325,14 +335,36 @@ a:hover {
     color 0.25s ease,
     border-color 0.25s ease;
 }
-.card__repo svg {
+.card__out svg {
   width: 16px;
   height: 16px;
 }
-.card__repo:hover {
+.card__out:hover {
   color: var(--text-hi);
   border-color: var(--hairline-hover);
   text-decoration: none;
+}
+
+/* Tag chips (cards + entry header). */
+.tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.card__tags {
+  margin-top: 12px;
+}
+.article__tags {
+  margin-top: 14px;
+}
+.tag {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  border: 1px solid var(--hairline);
+  color: var(--text-low);
 }
 
 /* ----- Article ----- */
@@ -359,12 +391,45 @@ a:hover {
   color: var(--text-mid);
   font-size: clamp(16px, 1.5vw, 19px);
 }
-.article__date {
-  display: block;
+.article__meta {
   margin-top: 16px;
+}
+.article__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.out-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 100px;
   font-family: "Space Mono", monospace;
   font-size: 12px;
-  color: var(--text-low-2);
+  color: var(--text-hi-3);
+}
+.out-link svg {
+  width: 14px;
+  height: 14px;
+}
+.out-link:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+/* The world's creed, signed off under hub intros and entries. */
+.sign-off {
+  margin-top: 28px;
+  font-family: "Space Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.hub-head .sign-off {
+  margin-top: 18px;
 }
 .article .backlink:last-child {
   margin-top: 48px;
