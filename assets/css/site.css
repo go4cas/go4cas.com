@@ -44,15 +44,8 @@ a:hover {
   color: var(--bg-base);
 }
 
-/* ----- Page container ----- */
-.page {
-  width: 100%;
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 0 clamp(20px, 5vw, 48px);
-}
-
-/* Centred inner rail for the full-bleed header/footer bars. */
+/* ----- Page container + centred inner rail for the full-bleed header/footer bars ----- */
+.page,
 .bar {
   width: 100%;
   max-width: 880px;
@@ -331,6 +324,10 @@ a:hover {
   transition:
     color 0.25s ease,
     border-color 0.25s ease;
+}
+.card__repo svg {
+  width: 16px;
+  height: 16px;
 }
 .card__repo:hover {
   color: var(--text-hi);
