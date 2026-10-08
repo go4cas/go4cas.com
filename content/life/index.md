@@ -1,7 +1,7 @@
 ---
 title: "The Life"
 summary: "Sports, outdoors, tattoos and heavy metal — tinkerer behind the pixels."
-creed: "Drink beer. Eat meat. Lift heavy!"
+creed: "Eat meat. Drink beer. Lift heavy!"
 feed: "Writing from the life world: sport, outdoors, and life off the clock."
 ---
 
