@@ -12,7 +12,9 @@
     "command": "bun run build"
   },
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    // Unknown paths get dist/404.html with a 404 status.
+    "not_found_handling": "404-page"
   },
   "compatibility_flags": [
     "nodejs_compat"

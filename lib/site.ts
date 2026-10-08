@@ -1,26 +1,17 @@
-// Site-wide constants and tiny helpers shared by templates and the RSS feed.
+// Site-wide constants and tiny helpers shared by templates and feeds.
+
+import { ICONS } from "./icons.ts";
 
 export const SITE_URL = "https://go4cas.com";
 export const SITE_NAME = "go4cas";
 
-export const WORLDS = ["work", "life"] as const;
-export type World = (typeof WORLDS)[number];
-export type Section = "projects" | "writing" | "pursuits";
-
-/** Sections allowed within each world (also fixes their display order on hubs). */
-export const WORLD_SECTIONS: Record<World, Section[]> = {
-  work: ["projects", "writing"],
-  life: ["pursuits", "writing"],
-};
-
-/** RSS channel description per world. */
-export const FEED_DESCRIPTIONS: Record<World, string> = {
-  work: "Writing from the work world: product, building, AI and open source.",
-  life: "Writing from the life world: sport, outdoors, and life off the clock.",
-};
-
-/** "writing" → "Writing". Worlds and sections are labelled by their key. */
-export const label = (key: string) => key[0].toUpperCase() + key.slice(1);
+/** Social links, used by the landing page and every content page footer. */
+export const SOCIALS: Array<{ icon: keyof typeof ICONS; href: string; name: string }> = [
+  { icon: "github", href: "https://github.com/go4cas", name: "GitHub — go4cas" },
+  { icon: "x", href: "https://x.com/go4cas", name: "X — @go4cas" },
+  { icon: "instagram", href: "https://instagram.com/go4cas", name: "Instagram — @go4cas" },
+  { icon: "email", href: "mailto:hello@go4cas.com", name: "Email — hello@go4cas.com" },
+];
 
 /** Escape text for safe interpolation into HTML/XML text nodes and attributes. */
 export function esc(value: unknown): string {
